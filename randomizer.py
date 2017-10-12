@@ -21,11 +21,15 @@ DEBUG_MODE = False
 class ItemMixin(object):
     @property
     def rank(self):
+        if self.index <= 0:
+            return -1
+
         buy_price, sell_price = (self.old_data["buy_price"],
                                  self.old_data["sell_price"])
         price = max(buy_price, sell_price*2)
         if min(buy_price, sell_price*2) >= 4:
             return price
+
         return 65536
 
     @classproperty
@@ -82,7 +86,11 @@ class MagicBitsMixin(object):
             setattr(self, attr, value)
 
 
-class ItemObject(ItemMixin, TableObject): pass
+class ItemObject(ItemMixin, TableObject):
+    mutate_attributes = {
+        "buy_price": None,
+        "sell_price": None,
+    }
 
 
 class WeaponObject(MagicBitsMixin, ItemMixin, TableObject):
@@ -101,6 +109,14 @@ class WeaponObject(MagicBitsMixin, ItemMixin, TableObject):
         "buy_price": None,
         "sell_price": None,
     }
+    intershuffle_attributes = [
+        "attack", "accuracy", "evasion", "strength", "stamina", "agility",
+        "intellect", "critical_rate", "hp_boost", "mp_boost",
+        ("buy_price", "sell_price"), "spell_index"]
+
+    @property
+    def intershuffle_valid(self):
+        return "equipshuffle" in get_activated_codes()
 
 
 class ArmorObject(MagicBitsMixin, ItemMixin, TableObject):
@@ -118,9 +134,28 @@ class ArmorObject(MagicBitsMixin, ItemMixin, TableObject):
         "buy_price": None,
         "sell_price": None,
     }
+    intershuffle_attributes = [
+        "defense", "weight", "evasion", "strength", "stamina", "agility",
+        "intellect", "hp_boost", "mp_boost", ("buy_price", "sell_price"),
+        "spell_index"]
+
+    @property
+    def intershuffle_valid(self):
+        return "equipshuffle" in get_activated_codes()
 
 
-class SpellObject(TableObject): pass
+class SpellObject(TableObject):
+    mutate_attributes = {
+        "accuracy": None,
+        "mp_cost": None,
+        "price": None,
+    }
+
+    @property
+    def rank(self):
+        return (self.old_data["spell_level"] << 32) | self.old_data["price"]
+
+
 class SpellClassObject(MagicBitsMixin, TableObject):
     magic_bits_attributes = ["equipability"]
 
@@ -235,6 +270,7 @@ if __name__ == "__main__":
                        and g not in [TableObject]]
 
         codes = {
+            "equipshuffle": ["equipshuffle"],
         }
         run_interface(ALL_OBJECTS, snes=False, codes=codes, custom_degree=True)
         hexify = lambda x: "{0:0>2}".format("%x" % x)
