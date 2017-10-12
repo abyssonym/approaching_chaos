@@ -18,39 +18,6 @@ ALL_OBJECTS = None
 DEBUG_MODE = False
 
 
-class ItemMixin(object):
-    @property
-    def rank(self):
-        if self.index <= 0:
-            return -1
-
-        buy_price, sell_price = (self.old_data["buy_price"],
-                                 self.old_data["sell_price"])
-        price = max(buy_price, sell_price*2)
-        if min(buy_price, sell_price*2) >= 4:
-            return price
-
-        return 65536
-
-    @classproperty
-    def all_items_and_equipment(self):
-        return ItemObject.every + WeaponObject.every + ArmorObject.every
-
-    @classproperty
-    def sorted_items_and_equipment(self):
-        return sorted(self.all_items_and_equipment,
-                      key=lambda i: (i.rank, random.random(), i.pointer))
-
-    def get_similar_all_items(self):
-        candidates = self.sorted_items_and_equipment
-        candidates = [c for c in candidates if c.rank > 0]
-        index = candidates.index(self)
-        max_index = len(candidates)-1
-        new_index = mutate_normal(index, 0, max_index,
-                                  random_degree=self.random_degree)
-        return candidates[new_index]
-
-
 class MagicBitsMixin(object):
     def mutate(self):
         super(MagicBitsMixin, self).mutate()
@@ -149,10 +116,78 @@ class EncounterMixin(object):
                         self.rare + self.super_rare)
 
 
+class PriceMixin(object):
+    def price_clean(self):
+        power = 0
+        price = self.price
+        if price == 0:
+            return
+
+        price = price * 2
+        while 0 < price < 100000:
+            price *= 10
+            power += 1
+        price = int(round(price, -4))
+        price /= (10**power)
+        price = price / 2
+        if price > 10 and price % 10 == 0 and VERSION % 2 == 1:
+            price = price - 1
+        price = min(price, 99999)
+
+        if hasattr(self, "buy_price"):
+            self.buy_price = price
+            if self.sell_price > 0:
+                self.sell_price = min(self.sell_price, price / 2)
+        else:
+            self.price = price
+
+    def cleanup(self):
+        self.price_clean()
+
+
+class ItemMixin(PriceMixin):
+    @property
+    def rank(self):
+        if self.index <= 0:
+            return -1
+
+        buy_price, sell_price = (self.old_data["buy_price"],
+                                 self.old_data["sell_price"])
+        price = max(buy_price, sell_price*2)
+        if min(buy_price, sell_price*2) >= 4:
+            return price
+
+        if self.__class__ is ItemObject:
+            return 65536
+        else:
+            return 65537
+
+    @property
+    def price(self):
+        return self.buy_price
+
+    @classproperty
+    def all_items_and_equipment(self):
+        return ItemObject.every + WeaponObject.every + ArmorObject.every
+
+    @classproperty
+    def sorted_items_and_equipment(self):
+        return sorted(self.all_items_and_equipment,
+                      key=lambda i: (i.rank, random.random(), i.pointer))
+
+    def get_similar_all_items(self):
+        candidates = self.sorted_items_and_equipment
+        candidates = [c for c in candidates if c.rank > 0]
+        index = candidates.index(self)
+        max_index = len(candidates)-1
+        new_index = mutate_normal(index, 0, max_index,
+                                  random_degree=self.random_degree)
+        return candidates[new_index]
+
+
 class ItemObject(ItemMixin, TableObject):
     mutate_attributes = {
         "buy_price": None,
-        "sell_price": None,
     }
 
 
@@ -207,7 +242,7 @@ class ArmorObject(MagicBitsMixin, ItemMixin, TableObject):
         return "equipshuffle" in get_activated_codes()
 
 
-class SpellObject(TableObject):
+class SpellObject(PriceMixin, TableObject):
     mutate_attributes = {
         "accuracy": None,
         "mp_cost": None,
@@ -319,7 +354,117 @@ class MonsterObject(MagicBitsMixin, TableObject):
         self.mutate_magic_bits()
 
 
-class ShopPointerObject(TableObject): pass
+class ShopPointerObject(TableObject):
+    @classproperty
+    def after_order(self):
+        return [WeaponObject, ArmorObject, ItemObject]
+
+    def read_data(self, filename, pointer=None):
+        super(ShopPointerObject, self).read_data(filename, pointer)
+        assert self.zero == 0
+        assert self.eight == 8
+        f = open(filename, "r+b")
+        self.wares_pointer = self.shop_pointer
+        if 1 <= self.shop_type <= 3:
+            self.wares_pointer += 1
+        f.seek(self.wares_pointer)
+        self.wares_indexes = map(ord, f.read(self.num_items))
+        f.close()
+        self.rank
+
+    def write_data(self, filename, pointer=None, syncing=True):
+        super(ShopPointerObject, self).write_data(
+            filename, pointer, syncing=syncing)
+        assert len(self.wares_indexes) == self.num_items
+        f = open(filename, "r+b")
+        f.seek(self.wares_pointer)
+        f.write("".join(map(chr, self.wares_indexes)))
+        f.close()
+
+    @property
+    def shop_type(self):
+        return self.type_and_number >> 4
+
+    @property
+    def num_items(self):
+        return self.type_and_number & 0xF
+
+    @property
+    def item_type_object(self):
+        return {1: WeaponObject,
+                2: ArmorObject,
+                3: ItemObject,
+                4: ItemObject,  # Caravan
+                5: SpellObject,
+                6: SpellObject}[self.shop_type]
+
+    @property
+    def valid_wares(self):
+        assert self.shop_type > 0
+        if self.shop_type <= 4:
+            return [c for c in self.item_type_object.every if c.rank >= 0]
+        elif self.shop_type == 5:
+            return [s for s in SpellObject.every if 1 <= s.index <= 0x20]
+        elif self.shop_type == 6:
+            return [s for s in SpellObject.every if s.index >= 0x21]
+
+    @property
+    def wares(self):
+        return [self.item_type_object.get(i) for i in self.wares_indexes]
+
+    @property
+    def rank(self):
+        if hasattr(self, "_rank"):
+            return self._rank
+        prices = [w.price for w in self.wares]
+        self._rank = int(round(sum(prices) / len(prices)))
+        return self.rank
+
+    @classmethod
+    def intershuffle(cls):
+        white_shops = [s for s in cls.ranked if s.shop_type == 5]
+        black_shops = [s for s in cls.ranked if s.shop_type == 6]
+        for shops in [white_shops, black_shops]:
+            wares = []
+            for s in shops:
+                s.reseed(salt="spell_shuffle")
+                shop_wares = s.wares_indexes
+                random.shuffle(shop_wares)
+                wares.extend(shop_wares)
+            wares = shuffle_normal(wares, random_degree=cls.random_degree)
+            for s in shops:
+                assert len(s.wares_indexes) <= len(wares)
+                s.wares_indexes = wares[:len(s.wares_indexes)]
+                wares = wares[len(s.wares_indexes):]
+            assert len(wares) == 0
+
+    def mutate(self):
+        if self.shop_type >= 5:
+            return
+        if self.index == 0x26:
+            assert self.shop_type == 4
+            assert len(self.wares) == 1
+            return
+        new_wares = []
+        candidates = [c for c in self.valid_wares if c.buy_price > 2]
+        wares = self.wares
+        random.shuffle(wares)
+        for w in wares:
+            while True:
+                nw = w.get_similar(candidates)
+                if nw in new_wares:
+                    nw = random.choice(self.valid_wares)
+                if nw not in new_wares:
+                    break
+            if nw.rank >= 65536:
+                price = max(30000, nw.buy_price, nw.sell_price*2)
+                if price < 50000:
+                    price *= 2
+                price = mutate_normal(price, 0, 99999, wide=True,
+                                      random_degree=nw.random_degree)
+                nw.buy_price = price
+            new_wares.append(nw)
+        self.wares_indexes = sorted([nw.index for nw in new_wares])
 
 
 class BaseStatsObject(TableObject):
@@ -409,7 +554,7 @@ class ChestObject(TableObject):
 
         if not partner.get_bit("contains_item"):
             value = random.randint(int(round(value ** 0.9)), value)
-            value = mutate_normal(value, 0, 65536,
+            value = mutate_normal(value, 0, 65537,
                                   random_degree=self.random_degree)
             value = min(value, 65535)
             self.set_money_amount(value)

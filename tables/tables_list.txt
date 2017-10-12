@@ -5,7 +5,8 @@ SpellObject         spell_table.txt             1a1980  116
 SpellClassObject    spell_class_table.txt       1a20c0  65
 LevelExpObject      level_exp_table.txt         1be3b8  98
 MonsterObject       monster_table.txt           1de044,223f4c,227054,22a880 195
-ShopPointerObject   shop_pointer_table.txt      1dfb04,1e070c   51
+#ShopPointerObject   shop_pointer_table.txt      1dfb04,1e070c   40
+ShopPointerObject   shop_pointer_table.txt      1e070c,1dfb04   40
 BaseStatsObject     base_stats_table.txt        1e1354  6
 MapDataObject       map_data_table.txt          2160d0  212
 EncPackDistObject   enc_pack_dist_table.txt     2170a0  64
