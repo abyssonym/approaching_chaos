@@ -21,9 +21,3 @@ LevelAccuracyObject level_accuracy_table.txt    226fd6  12
 LevelMagResObject   level_mag_res_table.txt     226fe2  12
 ItemSpellObject     item_spell_table.txt        226ea2  44
 FormationObject     formation_table.txt         2288b4  369
-
-# Regarding shops - 0x1dfc9c
-# FD - Weapon Shop
-# FC - Armor Shop
-# FE - Item Shop
-# Magic Shop: All remaining bytes, based on length in ShopPointerObject table
