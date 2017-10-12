@@ -313,14 +313,30 @@ class MonsterObject(MagicBitsMixin, TableObject):
                 new_item = self.drop.get_similar_all_items()
                 self.set_drop(new_item)
                 self.drop_chance = mutate_normal(
-                    self.drop_chance, 0, 100, wide=True,
+                    self.drop_chance, 0, 100, wide=False,
                     random_degree=self.random_degree)
 
         self.mutate_magic_bits()
 
 
 class ShopPointerObject(TableObject): pass
-class BaseStatsObject(TableObject): pass
+
+
+class BaseStatsObject(TableObject):
+    mutate_attributes = {
+        "hp": None,
+        "mp": None,
+        "strength": None,
+        "agility": None,
+        "intellect": None,
+        "stamina": None,
+        "luck": None,
+        "accuracy": None,
+        "evasion": None,
+        "magic_defense": None,
+        }
+
+
 class MapDataObject(TableObject): pass
 class EncPackDistObject(TableObject): pass
 class OverworldEncObject(EncounterMixin, TableObject): pass
@@ -471,7 +487,78 @@ class AIObject(TableObject):
 
 
 class MonsterSizeObject(TableObject): pass
-class LevelUpObject(TableObject): pass
+
+
+class LevelUpObject(TableObject):
+    @classproperty
+    def after_order(self):
+        return [BaseStatsObject]
+
+    @property
+    def class_index(self):
+        return self.index / 99
+
+    @property
+    def base_stats(self):
+        return BaseStatsObject.get(self.class_index)
+
+    @classmethod
+    def mutate_stat_curve(cls, class_index, attr):
+        lus = [lu for lu in LevelUpObject.every
+               if lu.class_index == class_index]
+        assert len(lus) == 99
+        lus = lus[:98]
+        assert len(lus) == 98
+
+        lus[0].reseed(salt="fullmut"+attr)
+        bits = [lu.get_bit(attr) for lu in lus]
+        value = len([b for b in bits if b])
+        base_ratio = value / float(len(lus))
+        max_ratio = max([cls.get_class_stat_score(i, attr) / float(len(lus))
+                         for i in xrange(6)])
+        assert max_ratio >= base_ratio
+        base_ratio = mutate_normal(base_ratio, 0, max_ratio, wide=False,
+                                   random_degree=LevelUpObject.random_degree,
+                                   return_float=True)
+        remaining = list(lus)
+        while remaining:
+            ratio = mutate_normal(base_ratio, 0, max_ratio, wide=False,
+                                  random_degree=LevelUpObject.random_degree,
+                                  return_float=True)
+            max_index = len(remaining)-1
+            divider = random.randint(0, max_index)
+            aa = remaining[:divider]
+            bb = remaining[divider:]
+
+            if len(aa) > len(bb):
+                aa, bb = bb, aa
+            elif len(aa) == len(bb) and random.choice([True, False]):
+                aa, bb = bb, aa
+            if random.choice([True, True, False]):
+                to_set, remaining = aa, bb
+            else:
+                to_set, remaining = bb, aa
+
+            assert len(to_set + remaining) == max_index + 1
+            for lu in to_set:
+                value = (random.random() < ratio)
+                lu.set_bit(attr, value)
+
+    @classmethod
+    def get_class_stat_score(cls, class_index, attr):
+        lus = [lu for lu in LevelUpObject.every
+               if lu.class_index == class_index]
+        return len([lu for lu in lus if lu.get_bit(attr)])
+
+    @classmethod
+    def full_randomize(cls):
+        for class_index in range(6):
+            for attr in ["hp", "mp", "strength", "agility", "intellect",
+                         "stamina", "luck", "spell_level"]:
+                cls.mutate_stat_curve(class_index, attr)
+        cls.randomized = True
+
+
 class LevelAccuracyObject(TableObject): pass
 class LevelMagResObject(TableObject): pass
 class ItemSpellObject(TableObject): pass
