@@ -43,6 +43,7 @@ class ItemMixin(object):
 
     def get_similar_all_items(self):
         candidates = self.sorted_items_and_equipment
+        candidates = [c for c in candidates if c.rank > 0]
         index = candidates.index(self)
         max_index = len(candidates)-1
         new_index = mutate_normal(index, 0, max_index,
@@ -84,6 +85,68 @@ class MagicBitsMixin(object):
 
             value = value ^ new_value
             setattr(self, attr, value)
+
+
+class EncounterMixin(object):
+    @property
+    def old_formations(self):
+        return ([FormationObject.get(f) for f in self.old_data["common"]] +
+            [FormationObject.get(f) for f in self.old_data["uncommon"]] +
+            [FormationObject.get(f) for f in self.old_data["rare"]] +
+            [FormationObject.get(f) for f in self.old_data["super_rare"]])
+
+    @property
+    def rank(self):
+        if hasattr(self, "_rank"):
+            return self._rank
+        if set([f.index for f in self.old_formations]) == set([0]):
+            return -1
+        formation_ranks = [f.rank for f in self.old_formations]
+        weights = [12, 12, 12, 12, 6, 6, 3, 1]
+        self._rank = sum([f*w for (f,w) in zip(formation_ranks, weights)])
+        return self.rank
+
+    @classmethod
+    def intershuffle(cls):
+        for e in cls.every:
+            if e.rank < 0:
+                continue
+
+            for i in xrange(4):
+                e2 = e.get_similar(random_degree=cls.random_degree**2)
+                chosen = random.choice((e2.old_data["common"]*2)
+                                       + e2.old_data["uncommon"])
+                e.common[i] = chosen
+
+            for i in xrange(2):
+                e2 = e.get_similar(random_degree=cls.random_degree)
+                chosen = random.choice(e2.old_data["common"]
+                                       + (e2.old_data["uncommon"]*4)
+                                       + (e2.old_data["rare"]*4))
+                e.uncommon[i] = chosen
+
+            e2 = e.get_similar(random_degree=cls.random_degree**0.5)
+            chosen = random.choice(e2.old_data["uncommon"]
+                                   + (e2.old_data["rare"]*4)
+                                   + (e2.old_data["super_rare"]*2))
+            e.rare[0] = chosen
+
+            e2 = e.get_similar(random_degree=cls.random_degree**0.25)
+            chosen = random.choice(e2.old_data["rare"]
+                                   + (e2.old_data["super_rare"]*2))
+            e.super_rare[0] = chosen
+
+    def shuffle(self):
+        random.shuffle(self.common)
+        random.shuffle(self.uncommon)
+        full = self.common + self.uncommon + self.rare + self.super_rare
+        full = shuffle_normal(full, random_degree=self.random_degree)
+        self.common = full[:4]
+        self.uncommon = full[4:6]
+        self.rare = full[6:7]
+        self.super_rare = full[7:]
+        assert full == (self.common + self.uncommon +
+                        self.rare + self.super_rare)
 
 
 class ItemObject(ItemMixin, TableObject):
@@ -161,13 +224,107 @@ class SpellClassObject(MagicBitsMixin, TableObject):
 
 
 class LevelExpObject(TableObject): pass
-class MonsterObject(TableObject): pass
+
+
+class MonsterObject(MagicBitsMixin, TableObject):
+    magic_bits_attributes = ["weaknesses", "resistances"]
+    mutate_attributes = {
+        "exp": None,
+        "gil": None,
+        "hp": None,
+        "morale": None,
+        "evasion": None,
+        "defense": None,
+        "hits": None,
+        "accuracy": None,
+        "attack": None,
+        "agility": None,
+        "intellect": None,
+        "critical_rate": None,
+        "magic_defense": None,
+        }
+    intershuffle_attributes = [
+        "exp", "gil", "hp", "morale", "evasion", "defense", "hits",
+        "accuracy", "attack", "agility", "intellect", "critical_rate",
+        "status_attack", "magic_defense"]
+
+    @property
+    def is_boss(self):
+        return 118 <= self.index <= 144 or self.index in [105]
+
+    @property
+    def rank(self):
+        if hasattr(self, "_rank"):
+            return self._rank
+        exp_rank = sorted(MonsterObject.every, key=lambda m: m.exp).index(self)
+        hp_rank = sorted(MonsterObject.every, key=lambda m: m.hp).index(self)
+        self._rank = max(exp_rank, hp_rank)
+        return self.rank
+
+    @property
+    def drop_type_object(self):
+        return {0: None,
+                1: ItemObject,
+                2: WeaponObject,
+                3: ArmorObject}[self.drop_type]
+
+    @property
+    def drop(self):
+        if self.drop_index <= 0:
+            return None
+        return self.drop_type_object.get(self.drop_index)
+
+    def set_drop(self, item):
+        self.drop_type = {
+            ItemObject: 1,
+            WeaponObject: 2,
+            ArmorObject: 3}[item.__class__]
+        self.drop_index = item.index
+
+    def cleanup(self):
+        if self.is_boss:
+            attrs = sorted(set(
+                self.mutate_attributes.keys() + self.intershuffle_attributes
+                + ["drop_chance"]))
+            for attr in attrs:
+                if getattr(self, attr) < self.old_data[attr]:
+                    setattr(self, attr, self.old_data[attr])
+            for attr in ["morale", "elemental_attack", "status_attack"]:
+                setattr(self, attr, self.old_data[attr])
+            self.weaknesses &= self.old_data["weaknesses"]
+            self.resistances |= self.old_data["resistances"]
+
+        if not self.drop:
+            self.drop_chance = 0
+
+        same = self.weaknesses & self.resistances
+        self.weaknesses ^= same
+        assert not self.weaknesses & self.resistances
+
+    def mutate(self):
+        super(MonsterObject, self).mutate()
+
+        self.reseed(salt="extra")
+        drop_partner = self.get_similar()
+        if drop_partner.old_data["drop_type"] or not self.is_boss:
+            for attr in ["drop_type", "drop_index", "drop_chance"]:
+                setattr(self, attr, drop_partner.old_data[attr])
+            if self.drop:
+                new_item = self.drop.get_similar_all_items()
+                self.set_drop(new_item)
+                self.drop_chance = mutate_normal(
+                    self.drop_chance, 0, 100, wide=True,
+                    random_degree=self.random_degree)
+
+        self.mutate_magic_bits()
+
+
 class ShopPointerObject(TableObject): pass
 class BaseStatsObject(TableObject): pass
 class MapDataObject(TableObject): pass
 class EncPackDistObject(TableObject): pass
-class OverworldEncObject(TableObject): pass
-class DungeonEncObject(TableObject): pass
+class OverworldEncObject(EncounterMixin, TableObject): pass
+class DungeonEncObject(EncounterMixin, TableObject): pass
 
 class ChestObject(TableObject):
     @property
@@ -250,13 +407,97 @@ class ChestObject(TableObject):
             chosen = chosen.get_similar()
             self.set_item(chosen)
 
-class MonsterAIObject(TableObject): pass
-class AIObject(TableObject): pass
+
+class MonsterAIObject(TableObject):
+    @property
+    def monster(self):
+        return MonsterObject.get(self.index)
+
+    @property
+    def rank(self):
+        return self.monster.rank
+
+    def mutate(self):
+        self.ai_index = self.get_similar().old_data["ai_index"]
+
+    def cleanup(self):
+        if self.ai_index == 0x2C or self.monster.is_boss:
+            self.ai_index = self.old_data["ai_index"]
+
+
+class AIObject(TableObject):
+    mutate_attributes = {
+        "spell_cast_chance": None,
+        "skill_cast_chance": None,
+        }
+
+    def shuffle(self):
+        spells = [s for s in self.spell_queue if s != 0xFF]
+        if spells:
+            length = random.randint(len(set(spells)), 8)
+            temp = sorted(set(spells))
+            while len(temp) < length:
+                temp.append(random.choice(spells))
+            random.shuffle(temp)
+            self.spell_queue = temp
+
+        skills = [s for s in self.skill_queue if s != 0xFF]
+        if skills:
+            length = random.randint(len(set(skills)), 4)
+            temp = sorted(set(skills))
+            while len(temp) < length:
+                temp.append(random.choice(skills))
+            random.shuffle(temp)
+            self.skill_queue = temp
+
+    def cleanup(self):
+        if set(self.skill_queue) == set([0xFF]):
+            self.skill_cast_chance = 0
+            self.spell_cast_chance = max(
+                self.spell_cast_chance, self.old_data["spell_cast_chance"])
+        else:
+            self.skill_cast_chance = max(
+                self.skill_cast_chance, self.old_data["skill_cast_chance"])
+
+        if set(self.spell_queue) == set([0xFF]):
+            self.spell_cast_chance = 0
+
+        while len(self.spell_queue) < 8:
+            self.spell_queue.append(0xFF)
+        while len(self.skill_queue) < 4:
+            self.skill_queue.append(0xFF)
+        assert len(self.spell_queue) == 8
+        assert len(self.skill_queue) == 4
+
+
 class MonsterSizeObject(TableObject): pass
 class LevelUpObject(TableObject): pass
 class LevelAccuracyObject(TableObject): pass
 class LevelMagResObject(TableObject): pass
 class ItemSpellObject(TableObject): pass
+
+
+class FormationObject(TableObject):
+    mutate_attributes = {"ambush_rate": None}
+
+    @property
+    def enemy_types(self):
+        enemies = set([])
+        for i in xrange(1, 5):
+            index = getattr(self, "group%s_index" % i)
+            if index == 0xFF:
+                continue
+            lower = getattr(self, "group%s_min" % i)
+            if lower <= 0:
+                continue
+            m = MonsterObject.get(index)
+            enemies.add(m)
+        return sorted(enemies, key=lambda m: m.index)
+
+    @property
+    def rank(self):
+        ranks = [m.rank for m in self.enemy_types]
+        return max(ranks)
 
 
 if __name__ == "__main__":

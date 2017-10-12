@@ -16,9 +16,9 @@ status_attack,1
 family,1
 magic_defense,1
 unused,1
-weaknesses,1
-resistances,1
+weaknesses,2
+resistances,2
 drop_type,1
 drop_index,1
 drop_chance,1
-zero,2
+zero,3
