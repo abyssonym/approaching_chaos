@@ -1,0 +1,62 @@
+Final Fantasy Dawn of Souls APPROACHING CHAOS Randomizer
+Version:    1
+Date:       October 12, 2017
+URL:
+    www.abyssonym.com/2017/10/12/ff-dawn-of-souls-approaching-chaos-randomizer
+Contact:    https://twitter.com/abyssonym
+
+--- HOW TO USE ---
+About:
+    This is a randomizer for Final Fantasy: Dawn of Souls. Currently, only the Final Fantasy 1 part of the rom is randomized. The FF2 part is planned for a future version.
+
+Running the randomizer:
+    Windows users may use the executable file, "ffdos_approaching_chaos.exe". Other users, please run "randomizer.py" using Python version 2.7.
+
+Source rom file:
+    This randomizer requires a Final Fantasy: Dawn of Souls GBA rom with the following hash:
+    MD5 - 5d29999685413c4d2bec10d3160f6ee6 (NA)
+
+Seed value:
+    Input a seed value here, or leave it blank if you don't care.
+
+Flags:
+    a  Randomize monster ai.
+    c  Randomize character class stats.
+    e  Randomize encounters.
+    m  Randomize monster stats and drops.
+    p  Randomize shops.
+    q  Randomize items and equipability.
+    s  Randomize spells and spell equipability.
+    t  Randomize treasure chests.
+
+Randomness:
+    The "randomness" option controls how extreme the randomizations are. At 0.0, almost nothing will be randomized. At 1.0, enemies in the starting area will most likely have boss stats. I suggest leaving it at the default setting of 0.5 for your first run.
+    It is possible to use different settings for different flags. Type "custom" to enable more detailed randomness settings. This is useful, for example, when you want to find high-level gear without fighting high-level enemies.
+
+Output files:
+    The randomizer will output a new, randomized rom with the seed in the filename.
+
+SPECIAL THANKS:
+    DSF AKA DoodSF AKA deranged_squirrel_fighter, who commissioned this randomizer. Thanks to his generosity, everyone gets to enjoy Final Fantasy Dawn of Souls randomized. Check out his Twitch channel at https://www.twitch.tv/doodsf where he plays tons of randomizers.
+
+Like this randomizer? Be sure to check out my other projects:
+    FF6 Beyond Chaos Randomizer
+        https://github.com/abyssonym/beyondchaos
+    FF Tactics Rumble Chaos Crashdown Randomizer
+        https://github.com/abyssonym/rumble_chaos_crashdown
+    Breath of Fire 2 Painsong Randomizer
+        https://github.com/abyssonym/painsong
+    Chrono Trigger Eternal Nightmare Randomizer
+        https://github.com/abyssonym/eternalnightmare
+    Final Fantasy Mystic Quest Terrible Secret Randomizer
+        https://github.com/abyssonym/terriblesecret
+    Super Mario RPG Gentle Beauty and Raw Power Randomizer
+        https://github.com/abyssonym/smrpg_gbarp
+    FF5 Grand Cross Randomizer
+        https://github.com/abyssonym/grand_cross
+    FF4 Beyond Babil Ancient Cave Randomizer
+        https://github.com/abyssonym/beyond_babil
+    Castlevania Aria of Sorrow Item Randomizer
+        https://github.com/abyssonym/aos_rando
+    Lufia 2 Terror Wave Randomizer
+        http://www.abyssonym.com/2017/09/12/lufia-2-terror-wave-new-randomizer
