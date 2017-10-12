@@ -55,6 +55,9 @@ class MagicBitsMixin(object):
 
 
 class EncounterMixin(object):
+    flag = 'e'
+    custom_random_enable = True
+
     @property
     def old_formations(self):
         return ([FormationObject.get(f) for f in self.old_data["common"]] +
@@ -146,6 +149,9 @@ class PriceMixin(object):
 
 
 class ItemMixin(PriceMixin):
+    flag = 'q'
+    custom_random_enable = True
+
     @property
     def rank(self):
         if self.index <= 0:
@@ -186,6 +192,8 @@ class ItemMixin(PriceMixin):
 
 
 class ItemObject(ItemMixin, TableObject):
+    flag_description = "items and equipability"
+
     mutate_attributes = {
         "buy_price": None,
     }
@@ -243,6 +251,10 @@ class ArmorObject(MagicBitsMixin, ItemMixin, TableObject):
 
 
 class SpellObject(PriceMixin, TableObject):
+    flag = 's'
+    flag_description = "spells and spell equipability"
+    custom_random_enable = True
+
     mutate_attributes = {
         "accuracy": None,
         "mp_cost": None,
@@ -255,6 +267,9 @@ class SpellObject(PriceMixin, TableObject):
 
 
 class SpellClassObject(MagicBitsMixin, TableObject):
+    flag = 's'
+    custom_random_enable = True
+
     magic_bits_attributes = ["equipability"]
 
 
@@ -262,6 +277,10 @@ class LevelExpObject(TableObject): pass
 
 
 class MonsterObject(MagicBitsMixin, TableObject):
+    flag = 'm'
+    flag_description = "monster stats and drops"
+    custom_random_enable = True
+
     magic_bits_attributes = ["weaknesses", "resistances"]
     mutate_attributes = {
         "exp": None,
@@ -355,6 +374,10 @@ class MonsterObject(MagicBitsMixin, TableObject):
 
 
 class ShopPointerObject(TableObject):
+    flag = 'p'
+    flag_description = "shops"
+    custom_random_enable = True
+
     @classproperty
     def after_order(self):
         return [WeaponObject, ArmorObject, ItemObject]
@@ -451,7 +474,8 @@ class ShopPointerObject(TableObject):
         random.shuffle(wares)
         for w in wares:
             while True:
-                nw = w.get_similar(candidates)
+                nw = w.get_similar(candidates,
+                                   random_degree=self.random_degree)
                 if nw in new_wares:
                     nw = random.choice(self.valid_wares)
                 if nw not in new_wares:
@@ -468,6 +492,10 @@ class ShopPointerObject(TableObject):
 
 
 class BaseStatsObject(TableObject):
+    flag = 'c'
+    flag_description = "character class stats"
+    custom_random_enable = True
+
     mutate_attributes = {
         "hp": None,
         "mp": None,
@@ -488,6 +516,10 @@ class OverworldEncObject(EncounterMixin, TableObject): pass
 class DungeonEncObject(EncounterMixin, TableObject): pass
 
 class ChestObject(TableObject):
+    flag = 't'
+    flag_description = "treasure chests"
+    custom_random_enable = True
+
     @property
     def item_type_object(self):
         if self.is_money:
@@ -565,11 +597,16 @@ class ChestObject(TableObject):
                 chosen = partner.ranked[0]
             else:
                 chosen = candidates[-1]
-            chosen = chosen.get_similar()
+            chosen = chosen.get_similar(
+                random_degree=ChestObject.random_degree)
             self.set_item(chosen)
 
 
 class MonsterAIObject(TableObject):
+    flag = 'a'
+    flag_description = "monster AI"
+    custom_random_enable = True
+
     @property
     def monster(self):
         return MonsterObject.get(self.index)
@@ -587,6 +624,9 @@ class MonsterAIObject(TableObject):
 
 
 class AIObject(TableObject):
+    flag = 'a'
+    custom_random_enable = True
+
     mutate_attributes = {
         "spell_cast_chance": None,
         "skill_cast_chance": None,
@@ -635,6 +675,9 @@ class MonsterSizeObject(TableObject): pass
 
 
 class LevelUpObject(TableObject):
+    flag = 'c'
+    custom_random_enable = True
+
     @classproperty
     def after_order(self):
         return [BaseStatsObject]
@@ -710,6 +753,10 @@ class ItemSpellObject(TableObject): pass
 
 
 class FormationObject(TableObject):
+    flag = 'e'
+    flag_description = "encounters"
+    custom_random_enable = True
+
     mutate_attributes = {"ambush_rate": None}
 
     @property
