@@ -1,0 +1,4 @@
+# the length covers weapons, armor, items; anything remaining is spells
+item_wares_length,4
+shop_pointer,3
+eight,1

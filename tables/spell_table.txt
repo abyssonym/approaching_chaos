@@ -1,0 +1,10 @@
+usage,1
+targeting,1
+power_status_etc,2
+element,2
+spell_type,1
+graphics_index,1
+accuracy,1
+spell_level,1
+mp_cost,2
+price,4

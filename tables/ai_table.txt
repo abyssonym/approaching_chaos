@@ -1,0 +1,6 @@
+spell_cast_chance,1
+skill_cast_chance,1
+spell_queue,8,list
+ff1,1
+skill_queue,4,list
+ff2,1

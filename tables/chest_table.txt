@@ -1,0 +1,3 @@
+item_type,1
+contents,2
+misc,1

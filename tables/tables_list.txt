@@ -1,0 +1,28 @@
+ItemObject          item_table.txt              19f07c  44
+WeaponObject        weapon_table.txt            19f33c  65
+ArmorObject         armor_table.txt             19fa58  71
+SpellObject         spell_table.txt             1a1980  116
+SpellClassObject    spell_class_table.txt       1a20c0  65
+LevelExpObject      level_exp_table.txt         1be3b8  98
+MonsterObject       monster_table.txt           1de044,223f4c,227054,22a880 195
+ShopPointerObject   shop_pointer_table.txt      1dfb04,1e070c   51
+BaseStatsObject     base_stats_table.txt        1e1354  6
+MapDataObject       map_data_table.txt          2160d0  212
+EncPackDistObject   enc_pack_dist_table.txt     2170a0  64
+OverworldEncObject  encounter_table.txt         2170e0  195
+DungeonEncObject    encounter_table.txt         2177cc  97
+ChestObject         chest_table.txt             217fb4  256
+MonsterAIObject     monster_ai_table.txt        22f0b8  195
+AIObject            ai_table.txt                22f17c  69
+MonsterSizeObject   monster_size_table.txt      223644  195
+LevelUpObject       levelup_table.txt           223adc  594
+LevelAccuracyObject level_accuracy_table.txt    226fd6  12
+LevelMagResObject   level_mag_res_table.txt     226fe2  12
+ItemSpellObject     item_spell_table.txt        226ea2  44
+FormationObject     formation_table.txt         2288b4  369
+
+# Regarding shops - 0x1dfc9c
+# FD - Weapon Shop
+# FC - Armor Shop
+# FE - Item Shop
+# Magic Shop: All remaining bytes, based on length in ShopPointerObject table

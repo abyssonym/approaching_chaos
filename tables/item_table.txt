@@ -1,0 +1,8 @@
+order,2
+field_effect,1
+targeting,1
+usage,1
+graphic,1
+power,2
+buy_price,4
+sell_price,4

@@ -1,0 +1,5 @@
+exit_data_pointer,4
+music_index,1
+unknown1,1
+encounter_rate_index,1
+unknown2,1

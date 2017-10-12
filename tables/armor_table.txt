@@ -1,0 +1,16 @@
+order,2
+equipability,2
+defense,1
+weight,1
+evasion,1
+spell_index,1
+element,2
+strength,1
+stamina,1
+agility,1
+intellect,1
+hp_boost,1
+mp_boost,1
+unused,4
+buy_price,4
+sell_price,4

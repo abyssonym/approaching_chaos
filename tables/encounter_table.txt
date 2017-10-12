@@ -1,0 +1,4 @@
+common,4,list
+uncommon,2,list
+rare,1,list
+super_rare,1,list
