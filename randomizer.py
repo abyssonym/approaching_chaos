@@ -747,8 +747,16 @@ class LevelUpObject(TableObject):
         cls.randomized = True
 
 
-class LevelAccuracyObject(TableObject): pass
-class LevelMagResObject(TableObject): pass
+class LevelAccuracyObject(TableObject):
+    flag = 'c'
+    mutate_attributes = {"accuracy": None}
+
+
+class LevelMagResObject(TableObject):
+    flag = 'c'
+    mutate_attributes = {"mag_res": None}
+
+
 class ItemSpellObject(TableObject): pass
 
 
