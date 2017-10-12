@@ -21,8 +21,10 @@ DEBUG_MODE = False
 class ItemMixin(object):
     @property
     def rank(self):
-        price = max(self.buy_price, self.sell_price*2)
-        if min(self.buy_price, self.sell_price*2) >= 4:
+        buy_price, sell_price = (self.old_data["buy_price"],
+                                 self.old_data["sell_price"])
+        price = max(buy_price, sell_price*2)
+        if min(buy_price, sell_price*2) >= 4:
             return price
         return 65536
 
@@ -43,12 +45,86 @@ class ItemMixin(object):
                                   random_degree=self.random_degree)
         return candidates[new_index]
 
+
+class MagicBitsMixin(object):
+    def mutate(self):
+        super(MagicBitsMixin, self).mutate()
+        self.mutate_magic_bits()
+
+    def mutate_magic_bits(self):
+        self.reseed(salt="magicbit")
+        for attr in self.magic_bits_attributes:
+            value = getattr(self, attr)
+            sort_func = lambda x: (
+                bin(value ^ x).count('1'), random.random(), value)
+            all_values = set([o.old_data[attr] for o in self.every]
+                             + [value])
+            all_values = sorted(all_values, key=sort_func)
+            assert all_values[0] == value
+            max_index = len(all_values)-1
+            a = random.randint(
+                0, random.randint(0, random.randint(0, max_index)))
+            b = random.randint(0, max_index)
+            if a > b:
+                a, b = b, a
+            index = int(round((b * self.random_degree) +
+                              (a * (1-self.random_degree))))
+            new_value = all_values[index]
+            assert (value | new_value) == 0xFFFF & (value | new_value)
+            new_value = new_value ^ value
+            for i in xrange(16):
+                mask = (1 << i)
+                if random.random() > max(self.random_degree, 0.5):
+                    if (new_value & mask):
+                        new_value = new_value ^ mask
+
+            value = value ^ new_value
+            setattr(self, attr, value)
+
+
 class ItemObject(ItemMixin, TableObject): pass
-class WeaponObject(ItemMixin, TableObject): pass
-class ArmorObject(ItemMixin, TableObject): pass
+
+
+class WeaponObject(MagicBitsMixin, ItemMixin, TableObject):
+    magic_bits_attributes = ["equipability"]
+    mutate_attributes = {
+        "attack": None,
+        "accuracy": None,
+        "evasion": None,
+        "strength": None,
+        "stamina": None,
+        "agility": None,
+        "intellect": None,
+        "critical_rate": None,
+        "hp_boost": None,
+        "mp_boost": None,
+        "buy_price": None,
+        "sell_price": None,
+    }
+
+
+class ArmorObject(MagicBitsMixin, ItemMixin, TableObject):
+    magic_bits_attributes = ["equipability"]
+    mutate_attributes = {
+        "defense": None,
+        "weight": None,
+        "evasion": None,
+        "strength": None,
+        "stamina": None,
+        "agility": None,
+        "intellect": None,
+        "hp_boost": None,
+        "mp_boost": None,
+        "buy_price": None,
+        "sell_price": None,
+    }
+
 
 class SpellObject(TableObject): pass
-class SpellClassObject(TableObject): pass
+class SpellClassObject(MagicBitsMixin, TableObject):
+    magic_bits_attributes = ["equipability"]
+
+
 class LevelExpObject(TableObject): pass
 class MonsterObject(TableObject): pass
 class ShopPointerObject(TableObject): pass

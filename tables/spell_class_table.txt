@@ -1,2 +1,1 @@
-equip_basic,bit:warrior thief monk red_mage black_mage white_mage u06 u07
-equip_advanced,bit:knight ninja master red_wizard black_wizard white_wizard u16 u17
+equipability,2
