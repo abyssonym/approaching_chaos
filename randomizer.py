@@ -469,7 +469,8 @@ class ShopPointerObject(TableObject):
             assert len(self.wares) == 1
             return
         new_wares = []
-        candidates = [c for c in self.valid_wares if c.buy_price > 2]
+        candidates = [c for c in self.valid_wares
+                      if c.old_data["buy_price"] > 2]
         wares = self.wares
         random.shuffle(wares)
         for w in wares:
@@ -789,8 +790,8 @@ class FormationObject(TableObject):
 
 if __name__ == "__main__":
     try:
-        print ("You are using the Final Fantasy Dawn of Souls "
-               "randomizer version %s." % VERSION)
+        print ("You are using the Final Fantasy: Dawn of Souls "
+               "APPROACHING CHAOS randomizer version %s." % VERSION)
         print
 
         ALL_OBJECTS = [g for g in globals().values()
