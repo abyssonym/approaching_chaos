@@ -190,6 +190,13 @@ class ItemMixin(PriceMixin):
                                   random_degree=self.random_degree)
         return candidates[new_index]
 
+    def cleanup(self):
+        self.price_clean()
+
+        if self.index == 0:
+            for attr in self.old_data.keys():
+                setattr(self, attr, self.old_data[attr])
+
 
 class ItemObject(ItemMixin, TableObject):
     flag_description = "items and equipability"
