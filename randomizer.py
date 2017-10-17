@@ -795,6 +795,227 @@ class FormationObject(TableObject):
         return max(ranks)
 
 
+class FF2ChestObject(TableObject):
+    flag = 't'
+    custom_random_enable = True
+
+    def mutate(self):
+        if self.misc in [2, 4] and self.contents < 0x10:
+            return
+        partner = random.choice(FF2ChestObject.every)
+        assert self.misc in [1, 2, 4]
+        assert partner.misc in [1, 2, 4]
+        if partner.misc == 1:
+            if self.misc == 1:
+                value = self.contents
+            else:
+                value = ff2_get_price(self.contents)
+            self.misc = 1
+            value = min(65000, max(0, value))
+            self.contents = mutate_normal(value, 0, 65000, wide=True,
+                                          random_degree=self.random_degree)
+        else:
+            if self.misc == 1:
+                item = ff2_get_item_valued(self.contents)
+                self.misc = 2
+            else:
+                item = self.contents
+            item = ff2_get_similar_item(item, random_degree=self.random_degree)
+            self.contents = item
+        assert self.misc in [1, 2, 4]
+
+
+class FF2GilValueObject(TableObject): pass
+
+
+class FF2MonsterObject(MagicBitsMixin, TableObject):
+    flag = 'm'
+    custom_random_enable = True
+
+    magic_bits_attributes = ["resistances", "weaknesses", "absorbs"]
+    mutate_attributes = {
+        "hp": None,
+        "mp": None,
+        "accuracy_low": None,
+        "accuracy_high": None,
+        "attack": None,
+        "evasion_low": None,
+        "evasion_high": None,
+        "defense": None,
+        "mdef_low": None,
+        "mdef_high": None,
+    }
+    intershuffle_attributes = [
+        "hp", "mp", ("accuracy_low", "accuracy_high"), "attack",
+        ("evasion_low", "evasion_high"), "defense", ("mdef_low", "mdef_high"),
+        "drop_gil_index"]
+
+    @property
+    def monster_rank(self):
+        return FF2MonsterRankObject.get(self.index).monster_rank
+
+    @property
+    def is_boss(self):
+        return self.monster_rank >= 7 or self.old_data["hp"] >= 15000
+
+    @property
+    def rank(self):
+        if hasattr(self, "_rank"):
+            return self._rank
+        monster_rank = FF2MonsterRankObject.get(
+            self.index).old_data["monster_rank"]
+        if self.old_data["hp"] >= 15000:
+            monster_rank = max(monster_rank, 6.5)
+        monster_rank = monster_rank ** 0.5
+        self._rank = int(round(self.old_data["hp"] * monster_rank))
+        return self.rank
+
+    def mutate(self):
+        super(FF2MonsterObject, self).mutate()
+        partner = self.get_similar()
+        self.drop_gil_index = partner.old_data["drop_gil_index"]
+
+    def cleanup(self):
+        if self.is_boss:
+            for attr in ["hp", "mp", "accuracy_low", "accuracy_high", "attack",
+                         "evasion_low", "evasion_high", "defense", "mdef_low",
+                         "mdef_high"]:
+                if self.old_data[attr] > getattr(self, attr):
+                    setattr(self, attr, self.old_data[attr])
+            self.drop_gil_index = self.old_data["drop_gil_index"]
+            self.absorbs |= self.old_data["absorbs"]
+            self.resistances |= self.old_data["resistances"]
+            self.weaknesses &= self.old_data["weaknesses"]
+
+        for attr in ["accuracy", "evasion", "mdef"]:
+            lower = "%s_low" % attr
+            upper = "%s_high" % attr
+            if getattr(self, lower) > getattr(self, upper):
+                low = getattr(self, lower)
+                setattr(self, lower, getattr(self, upper))
+                setattr(self, upper, low)
+                assert getattr(self, lower) <= getattr(self, upper)
+
+        resorbs = self.resistances & self.absorbs
+        self.resistances ^= resorbs
+        weakres = self.weaknesses & (self.resistances | self.absorbs)
+        self.weaknesses ^= weakres
+
+
+class FF2MonsterRankObject(TableObject): pass
+
+
+class FF2MonsterDropObject(TableObject):
+    flag = 't'
+    custom_random_enable = True
+
+    def mutate(self):
+        for i, di in enumerate(self.drop_indexes):
+            if di and not di & 0x80:
+                self.drop_indexes[i] = ff2_get_similar_item(
+                    di, random_degree=self.random_degree)
+
+
+class FF2ArmorObject(TableObject): pass
+
+
+class FF2ShopObject(TableObject):
+    flag = 'p'
+    custom_random_enable = True
+
+    def mutate(self):
+        consumables = set(range(16, 47))
+        weapons = set(range(58, 112))
+        weapons |= set([192, 193, 194])
+        armors = set(range(49, 58)) | set(range(112, 152))
+        armors.add(195)
+        tomes = set(range(152, 192))
+        for itemset in [consumables, weapons, armors, tomes]:
+            if set(self.wares) <= itemset:
+                chosen = itemset
+                break
+        else:
+            chosen = consumables | weapons | armors | tomes
+
+        wares = list(self.wares)
+        random.shuffle(wares)
+        new_wares = []
+        for w in wares:
+            while True:
+                new = ff2_get_similar_item(w, chosen,
+                                           random_degree=self.random_degree)
+                if new not in new_wares:
+                    new_wares.append(new)
+                    break
+        assert len(new_wares) == len(wares)
+        self.wares = sorted(new_wares)
+
+        new_prices = []
+        for w in self.wares:
+            prices = sorted(FF2PriceObject.every,
+                            key=lambda po: abs(po.price - ff2_get_price(w)))
+            chosen = prices[0]
+            temp = chosen.get_similar()
+            if temp.price >= (ff2_get_price(w) / 2):
+                chosen = temp
+            new_prices.append(chosen.index)
+        assert len(new_prices) == len(self.prices)
+        self.prices = new_prices
+
+
+class FF2PriceObject(PriceMixin, TableObject):
+    flag = 'p'
+    custom_random_enable = True
+
+    @property
+    def rank(self):
+        return self.price
+
+
+class FF2ItemPriceObject(TableObject): pass
+class FF2EquipPriceObject(TableObject): pass
+
+
+def ff2_get_price(index):
+    if 191 <= index <= 195:
+        return 65000
+    if 0x10 <= index <= 0x30:
+        return FF2ItemPriceObject.get(index-0x10).price * 2
+    elif 0x31 <= index:
+        return FF2EquipPriceObject.get(index-0x31).price * 2
+    return None
+
+
+def ff2_get_ranked_items(candidates=None):
+    if candidates is None:
+        candidates = range(0x10, 196)
+    banned = range(0x10) + [47, 48]
+    candidates = [c for c in candidates if c not in banned]
+    candidates = sorted(candidates,
+                        key=lambda c: (ff2_get_price(c), random.random(), c))
+    return candidates
+
+
+def ff2_get_similar_item(item, candidates=None, random_degree=None):
+    candidates = ff2_get_ranked_items(candidates)
+    if random_degree is None:
+        random_degree = FF2ChestObject.random_degree
+    index = candidates.index(item)
+    max_index = len(candidates)-1
+    new_index = mutate_normal(index, 0, max_index, wide=True,
+                              random_degree=random_degree)
+    return candidates[new_index]
+
+
+def ff2_get_item_valued(value):
+    candidates = ff2_get_ranked_items()
+    lowest = candidates[0]
+    candidates = [c for c in candidates if ff2_get_price(c) <= value]
+    if not candidates:
+        return lowest
+    return candidates[-1]
+
+
 if __name__ == "__main__":
     try:
         print ("You are using the Final Fantasy: Dawn of Souls "

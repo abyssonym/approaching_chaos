@@ -21,3 +21,16 @@ LevelAccuracyObject level_accuracy_table.txt    226fd6  12
 LevelMagResObject   level_mag_res_table.txt     226fe2  12
 ItemSpellObject     item_spell_table.txt        226ea2  44
 FormationObject     formation_table.txt         2288b4  369
+
+UnknownChestObject      chest_table.txt             21c3bc  586
+
+FF2GilValueObject       ff2_gil_value_table.txt     232124  16
+FF2MonsterObject        ff2_monster_table.txt       233448  169
+FF2MonsterRankObject    ff2_monster_rank_table.txt  235cf2  169
+FF2MonsterDropObject    ff2_monster_drop_table.txt  235da4  62
+FF2ArmorObject          ff2_armor_table.txt         25d670  42
+FF2ChestObject          ff2_chest_table.txt         25e1ec  280
+FF2ShopObject           ff2_shop_table.txt          edf9cc  42
+FF2PriceObject          ff2_price_table.txt         edfbc4  29
+FF2ItemPriceObject      ff2_price_table.txt         edfc1e  33
+FF2EquipPriceObject     ff2_price_table.txt         edfc60  147
