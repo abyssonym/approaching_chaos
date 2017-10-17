@@ -263,7 +263,7 @@ class SpellObject(PriceMixin, TableObject):
     custom_random_enable = True
 
     mutate_attributes = {
-        "accuracy": None,
+        #"accuracy": None,
         "mp_cost": None,
         "price": None,
     }
@@ -1033,6 +1033,15 @@ if __name__ == "__main__":
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
+
+        if DEBUG_MODE:
+            for objtype in [ItemObject, WeaponObject,
+                            ArmorObject, SpellObject]:
+                for o in objtype.every:
+                    if hasattr(o, "buy_price"):
+                        o.buy_price = 1
+                    else:
+                        o.price = 1
 
         clean_and_write(ALL_OBJECTS)
         finish_interface()
