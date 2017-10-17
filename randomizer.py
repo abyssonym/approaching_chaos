@@ -755,13 +755,6 @@ class LevelUpObject(TableObject):
         if not indexes:
             return
 
-        if len(indexes) == 1:
-            v = indexes[0]
-            indexes = [v-1, v, v+1]
-            if random.choice([True, False]):
-                indexes.append(random.choice([v-2, v+2]))
-        indexes = [i for i in indexes if 1 <= i <= 49]
-
         new_indexes = []
         for i in indexes:
             while True:
@@ -769,10 +762,14 @@ class LevelUpObject(TableObject):
                 if n not in new_indexes:
                     new_indexes.append(n)
                     break
-        remaining = 8 - len(new_indexes)
-        highest = max(new_indexes)
-        new_indexes.extend(random.sample(range(highest+1, 50), remaining))
-        assert len(new_indexes) == 8
+
+        if len(new_indexes) > 1:
+            remaining = 8 - len(new_indexes)
+            highest = max(new_indexes)
+            new_indexes.extend(random.sample(range(highest+1, 50), remaining))
+            assert len(new_indexes) == 8
+
+        assert len(new_indexes) in [1, 8]
         for lu in lus:
             if lu.index in new_indexes:
                 lu.set_bit("spell_level", True)
