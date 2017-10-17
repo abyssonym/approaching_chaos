@@ -446,7 +446,14 @@ class ShopPointerObject(TableObject):
     def rank(self):
         if hasattr(self, "_rank"):
             return self._rank
-        prices = [w.price for w in self.wares]
+        try:
+            prices = [w.price for w in self.wares]
+        except KeyError, e:
+            if get_global_label() == "FFDOS_MOB":
+                self._rank = -1
+                return self.rank
+            else:
+                raise e
         self._rank = int(round(sum(prices) / len(prices)))
         return self.rank
 
@@ -475,6 +482,8 @@ class ShopPointerObject(TableObject):
             assert self.shop_type == 4
             assert len(self.wares) == 1
             return
+        if self.rank < 0:
+            return
         new_wares = []
         candidates = [c for c in self.valid_wares
                       if c.old_data["buy_price"] > 2]
@@ -492,6 +501,7 @@ class ShopPointerObject(TableObject):
                 price = max(30000, nw.buy_price, nw.sell_price*2)
                 if price < 50000:
                     price *= 2
+                price = min(price, 99999)
                 price = mutate_normal(price, 0, 99999, wide=True,
                                       random_degree=nw.random_degree)
                 nw.buy_price = price
@@ -590,6 +600,7 @@ class ChestObject(TableObject):
 
         if not partner.get_bit("contains_item"):
             value = random.randint(int(round(value ** 0.9)), value)
+            value = min(value, 65537)
             value = mutate_normal(value, 1, 65537,
                                   random_degree=self.random_degree)
             value = min(value, 65535)

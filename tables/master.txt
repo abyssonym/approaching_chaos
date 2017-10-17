@@ -1,1 +1,2 @@
 FFDOS_NA    5d29999685413c4d2bec10d3160f6ee6    tables_list.txt
+FFDOS_MOB   ddfa04a34631c179f897ed7169e782f0    tables_list.txt
