@@ -750,7 +750,7 @@ class LevelUpObject(TableObject):
     def full_randomize(cls):
         for class_index in range(6):
             for attr in ["hp", "mp", "strength", "agility", "intellect",
-                         "stamina", "luck", "spell_level"]:
+                         "stamina", "luck"]:
                 cls.mutate_stat_curve(class_index, attr)
         cls.randomized = True
 
