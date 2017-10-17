@@ -578,12 +578,8 @@ class ChestObject(TableObject):
 
         self.reseed(salt="mut")
         partner = random.choice(
-            [c for c in self.every if c.rank > 0 or c.contents == 0])
-        if partner.rank <= 0:
-            self.item_type = 0
-            self.contents = 0
-            self.set_bit("contains_item", True)
-            return
+            [c for c in self.every if
+             c.rank > 0 and c.item_type > 0 and c.contents > 0])
 
         value = self.rank
         if value <= 0:
@@ -594,19 +590,21 @@ class ChestObject(TableObject):
 
         if not partner.get_bit("contains_item"):
             value = random.randint(int(round(value ** 0.9)), value)
-            value = mutate_normal(value, 0, 65537,
+            value = mutate_normal(value, 1, 65537,
                                   random_degree=self.random_degree)
             value = min(value, 65535)
             self.set_money_amount(value)
         else:
             partner = partner.item
-            candidates = [c for c in partner.ranked if c.rank <= value]
+            candidates = [c for c in partner.ranked if 0 < c.rank <= value]
             if not candidates:
-                chosen = partner.ranked[0]
+                candidates = [c for c in partner.ranked if c.rank > 0]
+                chosen = candidates[0]
             else:
                 chosen = candidates[-1]
             chosen = chosen.get_similar(
                 random_degree=ChestObject.random_degree)
+            assert chosen.index > 0
             self.set_item(chosen)
 
 
