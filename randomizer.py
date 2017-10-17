@@ -747,11 +747,47 @@ class LevelUpObject(TableObject):
         return len([lu for lu in lus if lu.get_bit(attr)])
 
     @classmethod
+    def mutate_spell_levels(cls, class_index):
+        lus = [lu for lu in LevelUpObject.every
+               if lu.class_index == class_index]
+        indexes = [i for (i, lu) in enumerate(lus)
+                   if lu.get_bit("spell_level")]
+        if not indexes:
+            return
+
+        if len(indexes) == 1:
+            v = indexes[0]
+            indexes = [v-1, v, v+1]
+            if random.choice([True, False]):
+                indexes.append(random.choice([v-2, v+2]))
+        indexes = [i for i in indexes if 1 <= i <= 49]
+
+        new_indexes = []
+        for i in indexes:
+            while True:
+                n = mutate_normal(i, 1, 40, random_degree=cls.random_degree)
+                if n not in new_indexes:
+                    new_indexes.append(n)
+                    break
+        remaining = 8 - len(new_indexes)
+        highest = max(new_indexes)
+        new_indexes.extend(random.sample(range(highest+1, 50), remaining))
+        assert len(new_indexes) == 8
+        for lu in lus:
+            if lu.index in new_indexes:
+                lu.set_bit("spell_level", True)
+            else:
+                lu.set_bit("spell_level", False)
+
+    @classmethod
     def full_randomize(cls):
         for class_index in range(6):
+            cls.class_reseed(salt="stats%s" % class_index)
             for attr in ["hp", "mp", "strength", "agility", "intellect",
                          "stamina", "luck"]:
                 cls.mutate_stat_curve(class_index, attr)
+            cls.class_reseed(salt="spells%s" % class_index)
+            cls.mutate_spell_levels(class_index)
         cls.randomized = True
 
 
@@ -1042,6 +1078,20 @@ if __name__ == "__main__":
                         o.buy_price = 1
                     else:
                         o.price = 1
+            for m in MonsterObject.every:
+                for attr in ["hp", "evasion", "defense", "hits", "accuracy",
+                             "attack", "agility", "intellect", "critical_rate",
+                             "magic_defense"]:
+                    setattr(m, attr, 1)
+                m.exp = 65000
+            for l in LevelUpObject.every:
+                l.set_bit("spell_level", True)
+            for b in BaseStatsObject.every:
+                b.spell_level = 8
+            for s in SpellObject.every:
+                s.mp_cost = 1
+            for s in SpellClassObject.every:
+                s.equipability = 0x0FFF
 
         clean_and_write(ALL_OBJECTS)
         finish_interface()

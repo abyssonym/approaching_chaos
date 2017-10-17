@@ -21,6 +21,7 @@ LevelAccuracyObject level_accuracy_table.txt    226fd6  12
 LevelMagResObject   level_mag_res_table.txt     226fe2  12
 ItemSpellObject     item_spell_table.txt        226ea2  44
 FormationObject     formation_table.txt         2288b4  369
+.patch              spell_level_patch.txt
 
 UnknownChestObject      chest_table.txt             21c3bc  586
 
