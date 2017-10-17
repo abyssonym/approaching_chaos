@@ -1,13 +1,13 @@
 Final Fantasy Dawn of Souls APPROACHING CHAOS Randomizer
-Version:    1
-Date:       October 12, 2017
+Version:    2
+Date:       October 17, 2017
 URL:
     www.abyssonym.com/2017/10/12/ff-dawn-of-souls-approaching-chaos-randomizer
 Contact:    https://twitter.com/abyssonym
 
 --- HOW TO USE ---
 About:
-    This is a randomizer for Final Fantasy: Dawn of Souls. Currently, only the Final Fantasy 1 part of the rom is randomized. The FF2 part is planned for a future version.
+    This is a randomizer for Final Fantasy: Dawn of Souls. Currently, FF1 is fully randomized and FF2 is only partially randomized. In FF2, only enemies, treasure, and shops are randomized.
 
 Running the randomizer:
     Windows users may use the executable file, "ffdos_approaching_chaos.exe". Other users, please run "randomizer.py" using Python version 2.7.
