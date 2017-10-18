@@ -779,8 +779,8 @@ class LevelUpObject(TableObject):
             assert len(new_indexes) == 8
 
         assert len(new_indexes) in [1, 8]
-        for lu in lus:
-            if lu.index in new_indexes:
+        for i, lu in enumerate(lus):
+            if i in new_indexes:
                 lu.set_bit("spell_level", True)
             else:
                 lu.set_bit("spell_level", False)
