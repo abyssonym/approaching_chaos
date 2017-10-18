@@ -197,6 +197,10 @@ class ItemMixin(PriceMixin):
             for attr in self.old_data.keys():
                 setattr(self, attr, self.old_data[attr])
 
+        for attr in self.old_data.keys():
+            if attr in ["attack", "defense"] and getattr(self, attr) == 0:
+                setattr(self, attr, self.old_data[attr])
+
 
 class ItemObject(ItemMixin, TableObject):
     flag_description = "items and equipability"
